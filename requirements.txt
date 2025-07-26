@@ -1,0 +1,11 @@
+
+Flask
+python-docx
+openpyxl
+python-pptx
+PyMuPDF
+pdf2image
+reportlab
+Pillow
+docx
+fitz
