@@ -7,7 +7,8 @@ from reportlab.pdfgen import canvas
 from PIL import Image
 import threading
 import time
-import aspose.words as aw  # New import for Word to PDF
+import mammoth
+from weasyprint import HTML
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -42,8 +43,10 @@ def convert():
         elif conversion == "word_to_pdf":
             pdf_path = os.path.join(CONVERTED_FOLDER, filename.replace('.docx', '.pdf'))
             try:
-                doc = aw.Document(filepath)
-                doc.save(pdf_path)
+                with open(filepath, "rb") as docx_file:
+                    result = mammoth.convert_to_html(docx_file)
+                    html_content = result.value
+                    HTML(string=html_content).write_pdf(pdf_path)
                 output_path = pdf_path
             except Exception as e:
                 return f"Conversion failed: {str(e)}"
@@ -112,6 +115,7 @@ threading.Thread(target=clean_old_files, args=(CONVERTED_FOLDER, AGE_LIMIT), dae
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
