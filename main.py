@@ -7,6 +7,7 @@ from reportlab.pdfgen import canvas
 from PIL import Image
 import threading
 import time
+import pypandoc
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -39,19 +40,12 @@ def convert():
             output_path = docx_file
 
         elif conversion == "word_to_pdf":
-            doc = Document(filepath)
             pdf_path = os.path.join(CONVERTED_FOLDER, filename.replace('.docx', '.pdf'))
-            c = canvas.Canvas(pdf_path)
-            y_position = 800
-            for para in doc.paragraphs:
-                if para.text.strip():
-                    c.drawString(50, y_position, para.text[:80])
-                    y_position -= 20
-                    if y_position < 50:
-                        c.showPage()
-                        y_position = 800
-            c.save()
-            output_path = pdf_path
+            try:
+                pypandoc.convert_file(filepath, 'pdf', outputfile=pdf_path)
+                output_path = pdf_path
+            except Exception as e:
+                return f"Conversion failed: {str(e)}"
 
         elif conversion == "txt_to_pdf":
             pdf_path = os.path.join(CONVERTED_FOLDER, filename.replace('.txt', '.pdf'))
@@ -81,68 +75,6 @@ def convert():
             images[0].save(image_path, 'PNG')
             output_path = image_path
 
-        elif conversion == "excel_to_pdf":
-            import openpyxl
-            wb = openpyxl.load_workbook(filepath)
-            pdf_path = os.path.join(CONVERTED_FOLDER, filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
-            c = canvas.Canvas(pdf_path)
-            y_position = 750
-
-            for sheet_name in wb.sheetnames:
-                ws = wb[sheet_name]
-                c.drawString(50, y_position, f"Sheet: {sheet_name}")
-                y_position -= 30
-
-                for row in ws.iter_rows(values_only=True):
-                    if any(cell is not None for cell in row):
-                        row_text = " | ".join([str(cell) if cell is not None else "" for cell in row])
-                        if len(row_text) > 80:
-                            row_text = row_text[:80] + "..."
-                        if y_position < 50:
-                            c.showPage()
-                            y_position = 750
-                        c.drawString(50, y_position, row_text)
-                        y_position -= 15
-
-                if y_position < 300:
-                    c.showPage()
-                    y_position = 750
-                else:
-                    y_position -= 50
-
-            c.save()
-            output_path = pdf_path
-
-        elif conversion == "pptx_to_pdf":
-            from pptx import Presentation
-            prs = Presentation(filepath)
-            pdf_path = os.path.join(CONVERTED_FOLDER, filename.replace('.pptx', '.pdf'))
-            c = canvas.Canvas(pdf_path)
-            y_position = 750
-
-            for slide in prs.slides:
-                c.drawString(50, y_position, f"--- Slide {prs.slides.index(slide) + 1} ---")
-                y_position -= 30
-
-                for shape in slide.shapes:
-                    if hasattr(shape, "text") and shape.text.strip():
-                        text_lines = [shape.text[i:i+80] for i in range(0, len(shape.text), 80)]
-                        for line in text_lines:
-                            if y_position < 50:
-                                c.showPage()
-                                y_position = 750
-                            c.drawString(50, y_position, line)
-                            y_position -= 20
-
-                if y_position < 300:
-                    c.showPage()
-                    y_position = 750
-                else:
-                    y_position -= 50
-
-            c.save()
-            output_path = pdf_path
-
         else:
             return "Conversion type not supported."
 
@@ -150,12 +82,12 @@ def convert():
             return send_file(output_path, as_attachment=True)
         else:
             return "Conversion failed. Please try again."
-
+    
     except Exception as e:
         return f"Error during conversion: {str(e)}"
 
-# Auto-delete files older than 300 seconds (1 minute)
-AGE_LIMIT = 300  # 300 seconds = 5 minute
+# Auto-delete files older than 1 minute
+AGE_LIMIT = 60
 
 def clean_old_files(folder, age_limit):
     print(f"Started cleanup thread for: {folder}")
@@ -171,14 +103,13 @@ def clean_old_files(folder, age_limit):
                         print(f"[DELETED] {filepath}")
                     except Exception as e:
                         print(f"[ERROR] Cannot delete {filepath}: {e}")
-        time.sleep(30)  # Check every 30 seconds
+        time.sleep(30)
 
-# Start cleanup threads
 threading.Thread(target=clean_old_files, args=(UPLOAD_FOLDER, AGE_LIMIT), daemon=True).start()
 threading.Thread(target=clean_old_files, args=(CONVERTED_FOLDER, AGE_LIMIT), daemon=True).start()
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=port)
+
 
