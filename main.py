@@ -7,7 +7,7 @@ from reportlab.pdfgen import canvas
 from PIL import Image
 import threading
 import time
-import pypandoc
+import aspose.words as aw  # New import for Word to PDF
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -42,7 +42,8 @@ def convert():
         elif conversion == "word_to_pdf":
             pdf_path = os.path.join(CONVERTED_FOLDER, filename.replace('.docx', '.pdf'))
             try:
-                pypandoc.convert_file(filepath, 'pdf', outputfile=pdf_path)
+                doc = aw.Document(filepath)
+                doc.save(pdf_path)
                 output_path = pdf_path
             except Exception as e:
                 return f"Conversion failed: {str(e)}"
@@ -111,5 +112,6 @@ threading.Thread(target=clean_old_files, args=(CONVERTED_FOLDER, AGE_LIMIT), dae
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=port)
+
 
 
