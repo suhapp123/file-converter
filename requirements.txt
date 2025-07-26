@@ -4,5 +4,5 @@ pdf2image
 python-docx
 reportlab
 Pillow
-pypandoc
+aspose-words
 
