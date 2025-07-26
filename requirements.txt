@@ -1,11 +1,8 @@
-
-Flask
-python-docx
-openpyxl
-python-pptx
-PyMuPDF
+flask
+pymupdf
 pdf2image
+python-docx
 reportlab
 Pillow
-docx
-fitz
+pypandoc
+
