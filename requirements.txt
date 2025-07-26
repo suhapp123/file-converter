@@ -4,5 +4,7 @@ pdf2image
 python-docx
 reportlab
 Pillow
-aspose-words
+mammoth
+weasyprint
+
 
